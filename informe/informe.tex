@@ -29,7 +29,7 @@
 
 \section{Introducción}
 
-El objetivo de este trabajo prático es implementar un algoritmo para realzar imágenes a través de la ecualización de histogramas siguiendo lo propuesto en el paper \textit{Adaptive extended piecewise histogram equalisation for dark image enhancement}. Aparte de dicha implementación, se buscará estudiar realizar un estudio sobre la selección de parámetros (en cuántos histogramas partir el original y la selección del $\alpha$ y  $\beta$).
+El objetivo de este trabajo prático es implementar un algoritmo para realzar imágenes a través de la ecualización de histogramas siguiendo lo propuesto en el paper \textit{Adaptive extended piecewise histogram equalisation for dark image enhancement} \cite{paper}. Aparte de esto, se buscará realizar un estudio sobre la selección de parámetros (en cuántos histogramas partir el original y la selección de $\alpha$ y  $\beta$).
 
 \section{Implementación}
 
@@ -37,7 +37,7 @@ Para la implementación del algoritmo seguimos el propuesto en el paper, el cual
 
 \begin{figure}[H]
 	\centering
-    \includegraphics[scale=0.4]{algoPaper.png}
+    \includegraphics[width=\textwidth]{algoPaper.png}
     \caption{Algoritmo propuesto}
 \end{figure}
 
@@ -51,7 +51,9 @@ El método llamado \textbf{AEPHE} toma como parámetro obligatorio de entrada la
 \item \textit{plot\textunderscore intermediate\textunderscore histograms:} Booleano que indica si se quiere ir mostrando las figuras de todos los subhitogramas generados durante la ejecución del algoritmo. El valor es \textit{False} por defecto.
 \end{itemize}
 
-Si el vector de $\gamma$'s no se especifica, tomamos todos los valores como 0 ya que dicho parámetro no contribuye notablemente al realce de la imagen. Si alguno de los otro dos vectores es nulo, luego se procede a calcularlos de la manera que lo indica el paper:
+La razón por la cual tomamos vectores de valores en algunos parámetros será explicada posteriormente cuando hablemos sobre la experimentación y los problemas con los que nos encontramos al realizar los mismos.
+
+Si el vector de $\gamma$'s no se especifica, tomamos todos los valores como 0 ya que dicho parámetro no contribuye notablemente al realce de la imagen. Si alguno de los otro dos vectores (vector de $\alpha$'s o $\beta$'s) es nulo, luego se procede a calcularlos de la manera que lo indica el paper:
 
 \begin{equation}
 \alpha = \dfrac{M_{i}}{M_{i} + M_{c}}
@@ -69,5 +71,16 @@ Si el vector de $\gamma$'s no se especifica, tomamos todos los valores como 0 ya
         \includegraphics[width=0.9\textwidth]{calculo_Mi.png}
     \end{subfigure}\hfill
 \end{figure}
+
+\section{Experimentación}
+
+
+\newpage 
+
+\begin{thebibliography}{9}
+\bibitem{paper}
+Zhigang Ling, Yan Liang, Yaonan Wang, He Shen, Xiao Lu. \textit{Adaptive extended piecewise histogram equalisation for dark image enhancement.} IET Image Processing. 2015.
+\end{thebibliography}
+
 
 \end{document}
