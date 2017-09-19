@@ -1,6 +1,6 @@
 \documentclass[10pt, a4paper]{article}
 \usepackage[utf8]{inputenc}
-\usepackage[paper=a4paper, left=4.0cm, right=4.0cm, bottom=1.5cm, top=3.5cm]{geometry}
+\usepackage[paper=a4paper, left=3.0cm, right=3.0cm, bottom=1.5cm, top=3.5cm]{geometry}
 \usepackage{mathtools}
 \usepackage{float}
 %\usepackage{graphicx}
@@ -72,8 +72,151 @@ Si el vector de $\gamma$'s no se especifica, tomamos todos los valores como 0 ya
     \end{subfigure}\hfill
 \end{figure}
 
+Cada uno de estos valores se calcula para cada subhistograma generado.
+
 \section{Experimentación}
 
+Al realizar la experimentación, uno de los problemas con el que nos encontramos fue que en imágenes que poseían partes muy claras, estas secciones quedaban completamente negras al aplicarles nuestro algoritmo.  Por ejemplo, al utilizar una imagen tomada por nosotros, nos pasaba lo siguiente:
+
+\begin{figure}[H]
+	\centering
+        \includegraphics[width=0.4\textwidth]{patitos1.jpg}
+        \caption{Imagen original}
+\end{figure}
+\begin{figure}[H]
+	\centering
+        \includegraphics[width=0.9\textwidth]{patitos-alpha096-beta004-k3.png}
+        \caption{Imagen ecualizada junto con sus canales R, G, B}
+\end{figure}
+
+Debido a esto, tomamos la decisión de que nuestro algoritmo tome como parámetros de entrada vectores de valores de $\alpha$ y $\beta$. Esto nos sirve para decidir qué peso darle al histograma uniforme y al original, lo cual se deduce de la fórmula provista:
+
+\begin{figure}[H]
+	\centering
+        \includegraphics[width=0.5\textwidth]{calculo-H.png}
+\end{figure}
+
+\subsection{Variación de parámetro K}
+
+Para esta parte buscamos experimentar variar el valor de K, el cual indica la cantidad de histogramas en los que se va a partir el original. 
+
+\subsubsection{Experimento 1}
+
+Para uno de los experimentos que decidimos realizar, tomamos una imagen que posee partes muy claras y el resto de la imagen un tanto oscuro en comparación y evaluamos cómo afecta la elección de dicho parámetro. Utilizamos el $\alpha$ y $\beta$ que se calcula automáticamente para cada subhistograma utilizando la fórmula del paper.
+
+Obtuvimos los siguientes resultados:
+
+\begin{figure}[H]
+	\centering
+        \includegraphics[width=0.3\textwidth]{patitos1.jpg}
+        \caption{Imagen original}
+\end{figure}
+
+\begin{figure}[H]	
+	\centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{patitos-k2.png}
+        \subcaption{$k=2$}
+    \end{subfigure}\hfill
+    	\centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{patitos-k4.png}
+        \subcaption{$k=4$}
+    \end{subfigure}\hfill	
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{patitos-k16.png}
+        \subcaption{$k=16$}
+    \end{subfigure}\hfill
+\end{figure}
+
+Al comparar las imágenes, se puede observar que a medida que se aumenta el $K$, la imagen se iba oscureciendo cada vez más. Debido a esto, nos fijamos en los histogramas de cada imagen:
+
+\begin{figure}[H]
+	\centering
+        \includegraphics[width=0.3\textwidth]{patitos1-histogramaOriginal.png}
+        \caption{Histograma de imagen original}
+\end{figure}
+
+\begin{figure}[H]	
+	\centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{patitos-histogramaFinal-k2.png}
+        \subcaption{Histograma de imagen ecualizada con $k=2$}
+    \end{subfigure}\hfill
+    	\centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{patitos-histogramaFinal-k4.png}
+        \subcaption{Histograma de imagen ecualizada con $k=4$}
+    \end{subfigure}\hfill	
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{patitos-histogramaFinal-k16.png}
+        \subcaption{Histograma de imagen ecualizada con $k=16$}
+    \end{subfigure}\hfill
+\end{figure}
+
+Así pudimos ver que en el caso de imágenes que poseen muchos píxeles oscuros y muchos claros, a medida que se va aumentando el valor de $k$, los histogramas tienden a ir concentrándose hacia el lado de estos valores elevados, en vez de generarse una ecualización equilibrada sobre todos los valores de gris. Esto mismo nos pasó con otras imágenes tomadas por nosotros que poseían características similares en cuanto a la distribución de colores. 
+
+\subsubsection{Experimento 2}
+
+Realizamos otros experimentos tomando imágenes provistas por la cátedra, cuya característica es que en su mayoría son oscuras y fijamos los parámetros $\alpha$ y $\beta$. Obtuvimos los siguientes resultados:
+
+\begin{figure}[H]
+	\centering
+        \includegraphics[width=0.3\textwidth]{1906ax.png}
+        \caption{Imagen original}
+\end{figure}
+
+\begin{figure}[H]	
+	\centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{1906ax-k2.png}
+        \subcaption{$k=2$}
+    \end{subfigure}\hfill
+    	\centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{1906ax-k4.png}
+        \subcaption{$k=4$}
+    \end{subfigure}\hfill	
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{1906ax-k16.png}
+        \subcaption{$k=16$}
+    \end{subfigure}\hfill
+\end{figure}
+
+Si bien se puede observar un leve cambio entre la imagen con $k=2$ y las demás, pudimos ver que a medida que se va aumentando el valor de $k$ para $k \geq 4$ no se producían cambios muy significativos.
+
+\subsubsection{Experimento 3}
+
+Realizamos un experimento similar al anterior (fijando el valor de $\alpha$ y $\beta$) con la imagen del primer experimento. Obtuvimos las siguientes imagenes:
+
+\begin{figure}[H]
+	\centering
+        \includegraphics[width=0.3\textwidth]{patitos1.jpg}
+        \caption{Imagen original}
+\end{figure}
+
+\begin{figure}[H]	
+	\centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{patitos-alphabetafijos-k4.png}
+        \subcaption{$k=4$}
+    \end{subfigure}\hfill
+    	\centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{patitos-alphabetafijos-k8.png}
+        \subcaption{$k=8$}
+    \end{subfigure}\hfill	
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+        \includegraphics[width=0.9\textwidth]{patitos-alphabetafijos-k16.png}
+        \subcaption{$k=16$}
+    \end{subfigure}\hfill
+\end{figure}
+
+Acá podemos observar resultados similares que los del experimento anterior, por lo que concluímos que el $k$ no produce cambios significativos al dejar fijos el valor de $\alpha$ y $\beta$.
 
 \newpage 
 
