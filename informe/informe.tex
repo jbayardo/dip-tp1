@@ -76,27 +76,123 @@ Cada uno de estos valores se calcula para cada subhistograma generado.
 
 \section{Experimentación}
 
-\subsection{PONER NOMBRE}
+\subsection{Experimentando con imágenes tanto claras como oscuras}
 
-Al realizar la experimentación, uno de los problemas con el que nos encontramos fue que en imágenes que poseían partes muy claras, estas secciones quedaban completamente negras al aplicarles nuestro algoritmo.  Por ejemplo, al utilizar una imagen tomada por nosotros, nos pasaba lo siguiente:
+Para los siguientes experimentos utilizamos fotos tomadas por nosotros de día cuya característica es que poseen partes muy claras y otras muy oscuras. La idea era observar cómo se comporta nuestro algoritmo seleccionando los valores de $\alpha$ y $\beta$ de manera automática, y tomando valores de $\gamma = 0$ y $k=3$. 
 
-\begin{figure}[H]
-	\centering
-        \includegraphics[width=0.4\textwidth]{patitos1.jpg}
-        \caption{Imagen original}
-\end{figure}
-\begin{figure}[H]
-	\centering
-        \includegraphics[width=0.9\textwidth]{patitos-alpha096-beta004-k3.png}
-        \caption{Imagen ecualizada junto con sus canales R, G, B}
-\end{figure}
+\subsubsection{Experimento 1}
 
-Debido a esto, tomamos la decisión de que nuestro algoritmo tome como parámetros de entrada vectores de valores de $\alpha$ y $\beta$. Esto nos sirve para decidir qué peso darle al histograma uniforme y al original, lo cual se deduce de la fórmula provista:
+Para realizar este experimento seleccionamos imágenes tomadas a contra luz para ver cómo afectaba la presencia del sol en la misma. Al comienzo de este experimento, utilizabamos siempre un único valor de $\alpha$ y $\beta$. Estos valores  nos sirven para decidir cuánto peso darle al histograma uniforme y  original, lo cual se deduce de la fórmula:
 
 \begin{figure}[H]
 	\centering
         \includegraphics[width=0.5\textwidth]{calculo-H.png}
 \end{figure}
+
+Obteníamos secciones de la imagen que en la original eran muy claras y en la ecualizada final quedaban completamente negras:
+
+\begin{figure}[H]	
+	\centering
+    \begin{subfigure}{0.5\textwidth}
+	\centering
+        \includegraphics[width=0.9\textwidth]{patitos1.jpg}
+        \subcaption{Imagen original}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.5\textwidth}
+    	\centering
+        \includegraphics[width=0.9\textwidth]{patitos1_ecualizada.png}
+        \subcaption{Imagen luego de ser ecualizada}
+    \end{subfigure}\hfill	
+\end{figure}
+
+Así, encontramos que dado que la imagen posee partes muy claras, hay un problema al momento de ecualizar aquellas secciones. Por esta razón, decidimos que nuestro algoritmo tome un vector de valores de $\alpha$'s y $\beta$'s, para poder decidir en cada subhistograma si darle más peso al original o al uniforme. 
+Luego, procedimos a seleccionar valores específicos para dichos parámetros de forma tal que nuestra imagen sea  correctamente ecualizada. Por ejemplo, variando los parámetros de la imagen anterior obtuvimos el siguiente resultado:
+
+\begin{figure}[H]	
+	\centering
+    \begin{subfigure}{0.5\textwidth}
+	\centering
+        \includegraphics[width=0.5\textwidth]{patitos1.jpg}
+        \subcaption{Imagen original}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.5\textwidth}
+    	\centering
+        \includegraphics[width=0.63\textwidth]{patitosclaro.png}
+        \subcaption{Imagen luego de ser ecualizada con $k=3, \alpha = [1, 1, 0], \beta = [0, 0, 1]$}
+    \end{subfigure}\hfill	
+\end{figure}
+
+\subsubsection{Experimento 2}
+
+En este experimento utilizamos unas imágenes tomadas mientras anochecía, en la cuales todavía había rastros de luz en el cielo. Éstas tienen la particularidad de ser tanto muy oscuras como muy claras. Al ejecutar nuestro algoritmo, ya trabajando con vectores automatizados de parámetros, obtuvimos problemas similares que con el experimento anterior, en los que el cielo se pintaba de negro:
+
+\begin{figure}[H]	
+	\centering
+    \begin{subfigure}{0.5\textwidth}
+	\centering
+        \includegraphics[width=0.9\textwidth]{rosedal_original.png}
+        \subcaption{Imagen original}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.5\textwidth}
+    	\centering
+        \includegraphics[width=0.9\textwidth]{rosedal-algoritmo.png}
+        \subcaption{Imagen luego de ser ecualizada}
+    \end{subfigure}\hfill	
+\end{figure}
+
+\begin{figure}[H]	
+	\centering
+    \begin{subfigure}{0.5\textwidth}
+	\centering
+        \includegraphics[width=0.9\textwidth]{rosedal-histograma-original.png}
+        \subcaption{Histograma de imagen original}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.5\textwidth}
+    	\centering
+        \includegraphics[width=0.9\textwidth]{rosedal-histograma-final.png}
+        \subcaption{Histograma ecualizado final}
+    \end{subfigure}\hfill	
+\end{figure}
+
+Al ir viendo los valores de $\alpha$ y $\beta$ que nuestro algoritmo generaba, veíamos que tomaba valores muy altos de $\beta$, dándole muy poco peso a la imagen original. Por esto decidimos modificar la cota inferior de $M_{I}$ ($M_{I}^l$) utilizada al momento de calcular el $\alpha$ y $\beta$ automatizado, para exigirle que mantenga parte de la imagen original siempre y no le asigne tanto peso al histograma uniforme, obtuviendo el siguiente resultado:
+
+\begin{figure}[H]	
+	\centering
+    \begin{subfigure}{0.5\textwidth}
+	\centering
+        \includegraphics[width=0.9\textwidth]{rosedal_original.png}
+        \subcaption{Imagen original}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.5\textwidth}
+    	\centering
+        \includegraphics[width=0.9\textwidth]{rosedal_ecualizada.png}
+        \subcaption{Imagen luego de ser ecualizada}
+    \end{subfigure}\hfill	
+\end{figure}
+
+Acá se puede observar que la imagen, si bien no quedó con secciones negras, se oscureció en vez de aclararse.  Por esta razón decidimos que para imágenes con características como estas, seleccionar automatizadamente los valores de los parámetros no nos estaba resultando, por lo que recurrimos a seleccionarlos nosotros mismos para intentar ecualizar correctamente la imagen. Obtuvimos el siguiente resultado:
+
+\begin{figure}[H]	
+	\centering
+    \begin{subfigure}{0.5\textwidth}
+	\centering
+        \includegraphics[width=0.7\textwidth]{rosedal_original.png}
+        \subcaption{Imagen original}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.5\textwidth}
+    	\centering
+        \includegraphics[width=0.8\textwidth]{rosedal-101-010.png}
+        \subcaption{Imagen luego de ser ecualizada con $k=3, \alpha = [1, 0, 1], \beta = [0, 1, 0]$}
+    \end{subfigure}\hfill	
+\end{figure}
+
+\subsection{Experimentos con imágenes oscuras}
+
+Para este experimento observamos el comportamiento de nuestro algoritmo sobre imágenes oscuras, varias de ellas provistas por la cátedra. Utilizamos el cálculo automatizado de valores de $\alpha$ y $\beta$, con $\gamma = 0$ y $k=3$.
+
+Al observar estos problemas, decidimos modificar el valor de $M_{I}^l$ para mantener parte de la imagen original y no provocar una sobre\-ecualización de la imagen. Por ejemplo, tomando $M_{I}^l=0.8$, obtuvimos los siguientes resultados:
+
+
 
 \subsection{Variación de parámetros}
 
@@ -104,7 +200,7 @@ Para esta parte buscamos experimentar variar el valor de K, el cual indica la ca
 
 \subsubsection{Experimento 1}
 
-Para uno de los experimentos que decidimos realizar, tomamos una imagen que posee partes muy claras y el resto de la imagen un tanto oscuro en comparación y evaluamos cómo afecta la elección de dicho parámetro. Utilizamos el $\alpha$ y $\beta$ que se calcula automáticamente para cada subhistograma utilizando la fórmula del paper.
+Para este experimento decidimos utilizamos el $\alpha$ y $\beta$ que se calcula de manera automática, y fuimos variando el valor de $k$. Utilizamos varias de las imágenes tomadas por nosotros y fuimos observando cómo iba quedando la imagen ecualizada.
 
 Obtuvimos los siguientes resultados:
 
@@ -162,37 +258,31 @@ Así pudimos ver que en el caso de imágenes que poseen muchos píxeles oscuros 
 
 \subsubsection{Experimento 2}
 
-Realizamos otros experimentos tomando imágenes provistas por la cátedra, cuya característica es que en su mayoría son oscuras y fijamos los parámetros $\alpha$ y $\beta$. Obtuvimos los siguientes resultados:
+Realizamos otros experimentos tomando imágenes provistas por la cátedra, cuya característica es que en su mayoría son oscuras, fijamos los parámetros $\alpha$ y $\beta$, y fuimos variando los valores de $k$. Obtuvimos los siguientes resultados:
 
 \begin{figure}[H]
 	\centering
-        \includegraphics[width=0.3\textwidth]{1906ax.png}
+        \includegraphics[width=0.3\textwidth]{fireworks.jpg}
         \caption{Imagen original}
 \end{figure}
 
 \begin{figure}[H]	
 	\centering
     \begin{subfigure}{0.3\textwidth}
-        \includegraphics[width=0.9\textwidth]{1906ax-k2.png}
-        \subcaption{$k=2$}
+        \includegraphics[width=0.9\textwidth]{fireworks-k4.png}
+        \subcaption{$k=4$}
     \end{subfigure}\hfill
     	\centering
     \begin{subfigure}{0.3\textwidth}
-        \includegraphics[width=0.9\textwidth]{1906ax-k4.png}
-        \subcaption{$k=4$}
+        \includegraphics[width=0.9\textwidth]{fireworks-k8.png}
+        \subcaption{$k=8$}
     \end{subfigure}\hfill	
     \centering
     \begin{subfigure}{0.3\textwidth}
-        \includegraphics[width=0.9\textwidth]{1906ax-k16.png}
+        \includegraphics[width=0.9\textwidth]{fireworks-k16.png}
         \subcaption{$k=16$}
     \end{subfigure}\hfill
 \end{figure}
-
-Si bien se puede observar un leve cambio entre la imagen con $k=2$ y las demás, pudimos ver que a medida que se va aumentando el valor de $k$ para $k \geq 4$ no se producían cambios muy significativos.
-
-\subsubsection{Experimento 3}
-
-Realizamos un experimento similar al anterior (fijando el valor de $\alpha$ y $\beta$) con la imagen del primer experimento. Obtuvimos las siguientes imagenes:
 
 \begin{figure}[H]
 	\centering
@@ -218,7 +308,8 @@ Realizamos un experimento similar al anterior (fijando el valor de $\alpha$ y $\
     \end{subfigure}\hfill
 \end{figure}
 
-Acá podemos observar resultados similares que los del experimento anterior, por lo que concluímos que el $k$ no produce cambios significativos al dejar fijos el valor de $\alpha$ y $\beta$.
+
+Si bien se puede observar un muy leve cambio entre las imágenes con $k=4$ y las demás, pudimos ver que a medida que se va aumentando el valor de $k$ para $k \geq 4$ no se producían cambios muy significativos y que el tiempo de cómputo aumentaba, por lo cual el valor de éste parámetro puede dejarse fijo en $k=3$ por ejemplo, como lo propone el paper.
 
 \newpage 
 
