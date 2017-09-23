@@ -228,7 +228,7 @@ Obtuvimos los siguientes resultados:
     \end{subfigure}\hfill
 \end{figure}
 
-Al comparar las imágenes, se puede observar que a medida que se aumenta el $K$, la imagen se iba oscureciendo cada vez más. Debido a esto, nos fijamos en los histogramas de cada imagen:
+Al comparar las imágenes, se puede observar que a medida que se aumenta el $K$, la imagen se iba oscureciendo cada vez más. Debido a esto, nos fijamos que el valor de $alpha$ seleccionado automáticamente en el último subhistograma era de 1.0 (no variando estos valores) y el valor de $\beta$ del primer subhistrograma era de aproximadamente $0.998$ (ecualizando mucho los valores oscuros). Estos fueron los histogramas ecualizados finales de cada imagen:
 
 \begin{figure}[H]
 	\centering
@@ -240,21 +240,21 @@ Al comparar las imágenes, se puede observar que a medida que se aumenta el $K$,
 	\centering
     \begin{subfigure}{0.3\textwidth}
         \includegraphics[width=0.9\textwidth]{patitos-histogramaFinal-k2.png}
-        \subcaption{Histograma de imagen ecualizada con $k=2$}
+        \subcaption{Histograma ecualizado con $k=2$}
     \end{subfigure}\hfill
     	\centering
     \begin{subfigure}{0.3\textwidth}
         \includegraphics[width=0.9\textwidth]{patitos-histogramaFinal-k4.png}
-        \subcaption{Histograma de imagen ecualizada con $k=4$}
+        \subcaption{Histograma ecualizado con $k=4$}
     \end{subfigure}\hfill	
     \centering
     \begin{subfigure}{0.3\textwidth}
         \includegraphics[width=0.9\textwidth]{patitos-histogramaFinal-k16.png}
-        \subcaption{Histograma de imagen ecualizada con $k=16$}
+        \subcaption{Histograma ecualizado con $k=16$}
     \end{subfigure}\hfill
 \end{figure}
 
-Así pudimos ver que en el caso de imágenes que poseen muchos píxeles oscuros y muchos claros, a medida que se va aumentando el valor de $k$, los histogramas tienden a ir concentrándose hacia el lado de estos valores elevados, en vez de generarse una ecualización equilibrada sobre todos los valores de gris. Esto mismo nos pasó con otras imágenes tomadas por nosotros que poseían características similares en cuanto a la distribución de colores. 
+Así pudimos ver que en el caso de estas imágenes que poseen muchos píxeles claros, a medida que se va aumentando el valor de $k$, los histogramas tienden a ir concentrándose hacia valores de gris oscuros, en vez de generarse una ecualización equilibrada sobre todos los valores, ya que mantiene en el histograma final la cantidad elevada de valores de $gris=255$ y ecualiza los oscuros. Resultados similares fueron obtenidos con diversas imágenes con características similares. 
 
 \subsubsection{Experimento 2}
 
