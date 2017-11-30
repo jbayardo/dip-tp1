@@ -248,42 +248,108 @@ class TableGreyscaleDecoder(GreyscaleDecoder):
         return np.multiply(chunk, self._quant_table)
 
 
+def zigzag(n):
+    """
+    Produce a list of indexes that traverse a matrix of size n * n using the JPEG zig-zag order.
+    Taken from https://rosettacode.org/wiki/Zig-zag_matrix#Alternative_version.2C_Translation_of:_Common_Lisp
+    
+    :param n: size of square matrix to iterate over
+    :return: list of indexes in the matrix, sorted by visit order
+    """
+    def move(i, j):
+        if j < (n - 1):
+            return max(0, i - 1), j + 1
+        else:
+            return i + 1, j
+
+    mask = []
+    x, y = 0, 0
+    for v in range(n * n):
+        mask.append((y, x))
+        # Inverse: mask[y][x] = v
+
+        if (x + y) & 1:
+            x, y = move(x, y)
+        else:
+            y, x = move(y, x)
+
+    return mask
+
+
+class DecompressingTableGreyscaleDecoder(TableGreyscaleDecoder):
+    def __init__(self, decompressor, quant_table, chunk_size=8):
+        super().__init__(quant_table, chunk_size)
+        self._zigzag_order = zigzag(chunk_size)
+        self._decompressor = decompressor
+
+    def apply(self, image):
+        image = self._decompress(image)
+        super().apply(image)
+        return self._processed_image
+
+    def _decompress(self, file):
+        width = file['width']
+        height = file['height']
+        image = np.zeros(shape=(width, height), dtype=np.int16)
+
+        assert width % self.chunk_size == 0
+        assert height % self.chunk_size == 0
+
+        height_blocks = height // self.chunk_size
+        width_blocks = width // self.chunk_size
+
+        last_chunk_DC_coefficient = 0
+        for height_block_index in range(height_blocks):
+            for width_block_index in range(width_blocks):
+                index = (height_block_index, width_block_index)
+                height_block_start = height_block_index * self.chunk_size
+                height_block_end = (height_block_index + 1) * self.chunk_size
+                width_block_start = width_block_index * self.chunk_size
+                width_block_end = (width_block_index + 1) * self.chunk_size
+
+                DC_coefficient = file['DC'][index] + last_chunk_DC_coefficient
+                last_chunk_DC_coefficient = DC_coefficient
+
+                compressed_chunk = list(zip(*file['chunks'][index]))
+                lengths_of_runs, codes = compressed_chunk[0], compressed_chunk[1]
+                symbols = self._decompressor.decode_many(codes)
+
+                decompressed_chunk = self._run_length_decode(DC_coefficient, lengths_of_runs, symbols)
+                image[height_block_start:height_block_end, width_block_start:width_block_end] = decompressed_chunk
+
+        return image
+
+    def _run_length_decode(self, DC_coefficient, lengths_of_runs, symbols):
+        chunk = np.zeros(shape=(self.chunk_size, self.chunk_size))
+        chunk[0, 0] = DC_coefficient
+        position = itertools.islice(self._zigzag_order, 1, None)
+        for length, symbol in zip(lengths_of_runs, symbols):
+            while length > 0:
+                i, j = next(position)
+                chunk[i, j] = symbol
+                length -= 1
+        return chunk
+
+
 class CompressingTableGreyscaleEncoder(TableGreyscaleEncoder):
     def __init__(self, compressor, quant_table, quant_threshold=None, chunk_size=8):
         super().__init__(quant_table, quant_threshold, chunk_size)
-        self._zigzag_order = self._zigzag(chunk_size)
+        self._zigzag_order = zigzag(chunk_size)
         self._compressor = compressor
         self._compressed_image = None
-        self._last_chunk_DC = None
-
-    @staticmethod
-    def _zigzag(n):
-        def move(i, j):
-            if j < (n - 1):
-                return max(0, i - 1), j + 1
-            else:
-                return i + 1, j
-
-        mask = []
-        x, y = 0, 0
-        for v in range(n * n):
-            mask.append((y, x))
-            # Inverse: mask[y][x] = v
-
-            if (x + y) & 1:
-                x, y = move(x, y)
-            else:
-                y, x = move(y, x)
-
-        return mask
+        self._last_chunk_DC_coefficient = None
 
     def apply(self, image):
-        self._last_chunk_DC = None
+        self._last_chunk_DC_coefficient = 0
         self._compressed_image = {
+            'DC': {},
             'chunks': {}
         }
 
         super().apply(image)
+
+        self._compressed_image['width'] = self.width
+        self._compressed_image['height'] = self.height
         return self._processed_image, self._compressed_image
 
     def _pipeline(self, height_block_index, width_block_index, chunk):
@@ -296,28 +362,25 @@ class CompressingTableGreyscaleEncoder(TableGreyscaleEncoder):
         index = (height_block_index, width_block_index)
 
         # Run-length encode the chunk
-        lengths_of_runs, symbols = self.run_length_encode(chunk)
+        lengths_of_runs, symbols = self._run_length_encode(chunk)
 
         # Compress the chunk
         compressed_chunk = self._compressor.encode_many(symbols)
 
         # Add to compressed file
-        if self._last_chunk_DC is None:
-            self._compressed_image['DC'][index] = chunk[0, 0]
-        else:
-            self._compressed_image['DC'][index] = chunk[0, 0] - self._last_chunk_DC
-        self._last_chunk_DC = chunk[0, 0]
+        self._compressed_image['DC'][index] = chunk[0, 0] - self._last_chunk_DC_coefficient
+        self._last_chunk_DC_coefficient = chunk[0, 0]
 
         self._compressed_image['chunks'][index] = list(zip(lengths_of_runs, compressed_chunk))
 
-    def run_length_encode(self, chunk):
+    def _run_length_encode(self, chunk):
         lengths_of_runs = []
         symbols = []
 
         # The first entry is the DC, which is encoded differently, so we skip it
         symbol = chunk[0, 1]
         length_of_run = 1
-        for index, (i, j) in itertools.islice(enumerate(self._zigzag_order), 2, None):
+        for (i, j) in itertools.islice(self._zigzag_order, 2, None):
             if chunk[i, j] != symbol:
                 lengths_of_runs.append(length_of_run)
                 symbols.append(symbol)
@@ -332,37 +395,39 @@ class CompressingTableGreyscaleEncoder(TableGreyscaleEncoder):
         return lengths_of_runs, symbols
 
 
-table = np.array([[17, 18, 24, 47, 99, 128, 192, 256],
-                  [18, 21, 26, 66, 99, 192, 256, 512],
-                  [24, 26, 56, 99, 128, 256, 512, 512],
-                  [47, 66, 99, 128, 256, 512, 1024, 1024],
-                  [99, 99, 128, 256, 512, 1024, 2048, 2048],
-                  [128, 192, 256, 512, 1024, 2048, 4096, 4096],
-                  [192, 256, 512, 1024, 2048, 4096, 8192, 8192],
-                  [256, 512, 512, 1024, 2048, 4096, 8192, 8192]])
+if __name__ == '__main__':
+    table = np.array([[17, 18, 24, 47, 99, 128, 192, 256],
+                      [18, 21, 26, 66, 99, 192, 256, 512],
+                      [24, 26, 56, 99, 128, 256, 512, 512],
+                      [47, 66, 99, 128, 256, 512, 1024, 1024],
+                      [99, 99, 128, 256, 512, 1024, 2048, 2048],
+                      [128, 192, 256, 512, 1024, 2048, 4096, 4096],
+                      [192, 256, 512, 1024, 2048, 4096, 8192, 8192],
+                      [256, 512, 512, 1024, 2048, 4096, 8192, 8192]])
 
-s = 7
-table[0:s, 0:s] = np.ones_like(table[0:s, 0:s])
+    s = 7
+    table[0:s, 0:s] = np.ones_like(table[0:s, 0:s])
 
-table = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
-                  [12, 12, 14, 19, 26, 58, 60, 55],
-                  [14, 13, 16, 24, 40, 57, 69, 56],
-                  [14, 17, 22, 29, 51, 87, 80, 62],
-                  [18, 22, 37, 56, 68, 109, 103, 77],
-                  [24, 35, 55, 64, 81, 104, 113, 92],
-                  [49, 64, 78, 87, 103, 121, 120, 101],
-                  [72, 92, 95, 98, 112, 100, 103, 99]])
+    table = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
+                      [12, 12, 14, 19, 26, 58, 60, 55],
+                      [14, 13, 16, 24, 40, 57, 69, 56],
+                      [14, 17, 22, 29, 51, 87, 80, 62],
+                      [18, 22, 37, 56, 68, 109, 103, 77],
+                      [24, 35, 55, 64, 81, 104, 113, 92],
+                      [49, 64, 78, 87, 103, 121, 120, 101],
+                      [72, 92, 95, 98, 112, 100, 103, 99]])
 
-table = 1 * np.ones_like(table)
+    table = 1 * np.ones_like(table)
 
-compressor = HuffmanTree.from_weight_dictionary({4: 54})
+    # TODO: esto tendria que ser un buen compresor, hay que usar una tabla copada.
+    translator = HuffmanTree.from_weight_dictionary({4: 54})
 
-lena = ski.io.imread('C:\\Users\\julia\\Documents\\dip-tp1\\data\\test\\lena.png')
-encoder = CompressingTableGreyscaleEncoder(compressor, table)
-encoded, compressed = encoder.apply(lena)
+    encoder = CompressingTableGreyscaleEncoder(translator, table)
+    decoder = DecompressingTableGreyscaleDecoder(translator, table)
 
-decoder = TableGreyscaleDecoder(table)
-decoded = decoder.apply(encoded)
+    lena = ski.io.imread('C:\\Users\\julia\\Documents\\dip-tp1\\data\\test\\lena.png')
+    encoded, compressed = encoder.apply(lena)
+    decoded = decoder.apply(compressed)
 
-ski.io.imshow(decoded)
-plt.show()
+    ski.io.imshow(decoded)
+    plt.show()
